@@ -1,0 +1,24 @@
+# Design Sync bits
+
+# dsupdate runs a pop -rec -get -unify in a directory specified, as the
+# user who owns the directory.
+
+dsupdate() { 
+(
+    cd $1; 
+    shift; 
+    u=`ls -1ld . | awk '{print $3}'`; 
+    case "$@" in
+        *"-share"*);;
+        *"-get"*);;
+        *"-lock"*);;
+        *)
+            _dsupdate_TYPE="-get"
+            ;;
+    esac
+    sudo -H -u $u dssc pop -rec $_dsupdate_TYPE -unify $@;
+); 
+    unset _dsupdate_TYPE
+
+}
+

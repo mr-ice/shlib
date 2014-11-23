@@ -1,0 +1,221 @@
+#
+# $Id: path,v 1.5 2003/02/11 14:57:02 mrice Exp $
+# sh/bash/ksh function for manipulating search path environment variables
+#
+# Examples of use:
+# path                       //prints a list of the current PATH environment
+# path -e LM_LICENSE_FILE    //prints a list of elements in the $LM_LICENSE_FILE
+# path -r $HOME/bin          //removes all instances of $HOME/bin in $PATH
+# path -a /sbin /usr/sbin    //removes then appends /sbin and /usr/sbin to $PATH
+# path -p $HOME/bin          //removes then prepends $HOME/bin to $PATH 
+# path -d , -e Path silly/example // prepends (default action if there is an
+#                            // argument) silly/example of $Path separated by ,
+# path -c                    // removes all duplicates (**NOTE: keeps last **)
+#
+# NOTES:
+#   recursively calls itself
+#   requires 'sed'
+
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+path() {
+    env="PATH"
+    action="prepend"
+    delim=":"
+    args=""
+    while [ "$#" -ge 1 ]; do
+        case "$1" in
+            -d)
+                delim=$2
+                if [ -z "$env" ]; then
+                    return
+                fi
+                shift
+                ;;
+            -e)
+                env=$2
+                if [ -z "$env" ]; then
+                    return
+                fi
+                shift
+                ;;
+            -a)
+                action="append"
+                ;;
+            -p)
+                action="prepend"
+                ;;
+            -r)
+                action="remove"
+                ;;
+            -c)
+                action="clean"
+                ;;
+            -s)
+                action="set"
+                ;;
+            -v)
+                action="edit"
+                ;;
+            -h|--help)
+                cat <<EoUsage
+Usage: path [-<acdehprsv>] [args]
+    a    - append to path
+    c    - clean path (removes duplicates)
+    d \$d - set delimiters [default ":"]
+    e \$e - set environment variable to use [default "PATH"]
+    h    - show this help message
+    p    - prepend to path [default action]
+    r    - remove from path
+    s    - set path
+    v    - edit path in $EDITOR or 'vi'
+
+    args is then a whitespace or $d delimited list of 
+    elements.  By default path will prepend args to
+    the path list.  
+EoUsage
+                return
+                ;;
+            -*)
+                echo "Uknown option to function path: $1, skipping"
+                ;;
+            *)
+                args="$args $1"
+                ;;
+            esac
+        shift
+    done
+      
+    TMPPATH=`eval "echo \\$$env"`
+
+    if [ -z "$args" -a "$action" != "clean" -a "$action" != "edit" ]; then
+        action="show"                           # default action
+    fi
+
+    case "$action" in
+        edit)
+            [ "$DEBUG" = "true" ] && echo "DEBUGGING: Doing edit"
+            [ -z "$TMPPATH" ] && return
+            OIFS="$IFS"
+            IFS="$delim"
+            set $TMPPATH
+            IFS="$OIFS"
+            TMPFILE=`/bin/mktemp /var/tmp/path$USER$$XXXXXX`
+            while [ "$#" -ge 1 ]; do
+                echo $1 >> $TMPFILE
+                shift
+            done
+            ${EDITOR:-vi} $TMPFILE
+            returncode=$?
+            if [ "$returncode" -ne 0 ]; then
+                echo "Error editing, aborting changes"
+                rm -f $TMPFILE
+                unset TMPFILE
+                unset $returncode
+                return
+            fi
+            TMPPATH=`cat $TMPFILE` 
+            [ ! -z "$TMPPATH" ] && set $TMPPATH
+            eval "$env=$1"
+            shift
+            while [ "$#" -ge 1 ]; do
+                eval "$env=\$$env$delim$1"
+                shift
+            done    
+            unset TMPPATH
+            rm -f $TMPFILE
+            unset TMPFILE
+            ;;
+        clean)
+            TMPPATH=`eval "echo \\$$env"`
+            TMPPATH="`echo $TMPPATH | sed -e \"s/$delim/ /g\"`"
+            for celem in $TMPPATH; do
+                if [ -z "$NEWPATH" ]; then
+                    NEWPATH=$celem
+                else
+                    if echo "$delim$NEWPATH$delim" | grep "$delim$celem$delim" 2>&1 >/dev/null; then
+                        continue
+                    else
+                        NEWPATH="$NEWPATH$delim$celem"
+                    fi
+                fi
+            done
+            eval "$env=$NEWPATH"
+            ;;
+        show)
+            [ -z "$TMPPATH" ] && return
+            OIFS="$IFS"
+            IFS="$delim"
+            set $TMPPATH
+            IFS="$OIFS"
+            while [ "$#" -ge 1 ]; do
+                echo $1
+                shift
+            done
+            ;;
+        append|remove|prepend)
+            for elem in $args; do
+                [ "$DEBUG" = "true" ] && echo "DEBUG $action $elem"
+                [ "$DEBUG" = "true" ] && echo "   $TMPPATH"
+
+                # remove all instances of this elem
+                TMPPATH=`echo "$delim$TMPPATH$delim" | sed -e "s,$delim$elem$delim,$delim,g;s/$delim$//;s/^$delim//"`
+                [ "$DEBUG" = "true" ] && echo "   $TMPPATH"
+                
+                if [ "$action" != "remove" ]; then
+                    if [ -n "$TMPPATH" ]; then
+                        if [ "$action" = "append" ]; then
+                            TMPPATH="$TMPPATH$delim$elem"
+                        else
+                            TMPPATH="$elem$delim$TMPPATH"
+                        fi
+                    else
+                        TMPPATH="$elem"
+                    fi
+                fi
+                [ "$DEBUG" = "true" ] && echo "   $TMPPATH"
+            done
+            eval "$env=$TMPPATH"
+            ;;
+        set)
+            [ "$DEBUG" = "true" ] && echo "DEBUGGING: Doing set"
+            [ ! -z "$args" ] && set $args
+            eval "$env=$1"
+            shift
+            [ "$#" -ge 1 ] && path -e $env -a $@
+            ;;
+    esac
+    eval "export $env" 
+    eval "export $env" 
+
+    unset env
+    unset action
+    unset delim
+    unset args
+    unset TMPPATH
+    unset NEWPATH
+}
+
+ldpath() 
+{
+    path -e LD_LIBRARY_PATH $@
+}
+
+manpath()
+{
+    path -e MANPATH $@
+}

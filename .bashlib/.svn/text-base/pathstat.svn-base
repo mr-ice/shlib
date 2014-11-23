@@ -1,0 +1,35 @@
+#
+# $Id: pathstat,v 1.3 2003/02/11 14:57:57 mrice Exp $ 
+# pathstat just takes a given path apart and stats every
+# piece of it -- useful for getting a picture of perms, for
+# example
+pathstat() {
+    _pathstat_args="$@"
+    for _pathstat_elem in $_pathstat_args; do
+        # this was taking the last layer of indirection out (symlink
+        # dereference), but it also would prevent the pathstat from
+        # giving you a partial answer if the arg you asked for didn't exist
+        # so I'm turning this off.
+        #_pathstat_base=`basename $_pathstat_elem`
+        #_pathstat_elem=`dirname $_pathstat_elem`
+        #_pathstat_elem=`cd $_pathstat_elem && pwd`
+        #_pathstat_elem="$_pathstat_elem/$_pathstat_base"
+        _pathstat_OIFS=$IFS
+        IFS="/"
+        set $_pathstat_elem
+        IFS="$_pathstat_OIFS"
+
+        unset _pathstat_path
+        for _pathstat_e in $@; do
+            [ "$_pathstat_path" ] && _pathstat_path="$_pathstat_path/$_pathstat_e"
+            [ "$_pathstat_path" ] || _pathstat_path="/$_pathstat_e"
+            ls -ild $_pathstat_path
+        done
+    done
+    unset _pathstat_args
+    unset _pathstat_elem
+    unset _pathstat_base
+    unset _pathstat_OIFS
+    unset _pathstat_path
+    unset _pathstat_e
+}

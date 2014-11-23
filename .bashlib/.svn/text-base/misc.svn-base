@@ -1,0 +1,712 @@
+
+# various other functions with no "family"
+# $Id: misc,v 1.8 2003/10/30 16:53:40 mrice Exp $
+
+EchoN() {
+    if [ -z "$EchoNN" -a -z "$EchoNC" ]; then
+        EchoNN="-n" 
+        EchoNC=""
+        
+        if echo "$EchoNN" "hi$EchoNC" 2>/dev/null | grep n 2>/dev/null; then
+            EchoNN=""
+            EchoNC="\c"
+        fi
+    fi
+    echo "$EchoNN" "$@$EchoNC"
+}
+
+nocomment() {
+    perl -lne 's/#.*//; next if /^\s*$/; next if /^\;/; print' "$@"
+}
+
+mkcd() {
+    mkdir -p "$@"
+    cd "$@"
+}
+
+cmkdir() {
+    mkcd "$@"
+}
+
+mkcdir() {
+    mkcd "$@"
+}
+
+labelxterm() {
+    unset PROMPT_COMMAND
+    TAG=${*:-$USER@$HOST}
+    echo -n "]2;$TAG"
+}
+
+nb() {
+    path -e MANPATH /usr/openv/man
+    path /usr/openv/netbackup/bin /usr/openv/netbackup/bin/admincmd /usr/openv/volmgr/bin
+}
+
+fixperms() {
+
+    # ensure u,g can rwx dirs and rw files
+    # ensure o can rx dirs and r files
+    # preserve sticky bits
+    # preserve execute bits on scripts/binaries
+
+    find ${@:-.} \
+        -type d -exec chmod u+rwx,g+rwx,o+rx,o-w {} \; -o \
+        -type f -exec chmod u+rw,g+rw,o+r,o-w {} \;
+
+}
+
+maildate() {
+    # print out a date in rfc2822 format
+    date +'%d %b %Y %H:%M %z'
+}
+
+splitpatch() {
+    perl -lne '$count++ if /^diff /; open(FILE,sprintf(">>patch.%03d",$count)); print FILE; ' $@
+}
+
+
+prtdiag() {
+    /usr/platform/`/usr/bin/uname -i`/sbin/prtdiag
+}
+
+ant() {
+    # first time we run this function will set up environment
+    # subsequent times we don't need this so we disable ourselves
+    unset ant      
+    if [ -z "$JAVA_HOME" ]; then
+        JAVA_HOME=/usr/local/java-sun/`/bin/ls -1 /usr/local/java-sun | tail -1`
+        export JAVA_HOME
+    fi
+    export ANT_HOME=$HOME/workingfolder/cvs/ant
+    path $ANT_HOME/bin $JAVA_HOME/bin
+    ant $@
+}
+
+indent() {
+    _indent_by=${_indent_by:-"    "}
+    sed -e "s/^/$_indent_by/"
+}
+
+countprocs() {
+    ps -eo user,args | tail +2 | sort | uniq -c
+}
+
+testdns() {
+    # resolve an ip through several nameservers
+    _testdns_host=$1
+    _testdns_servers=${_testdns_servers:-`egrep ^nameserver /etc/resolv.conf | sed -e 's/^nameserver //'`}
+
+    _start=`date +%s`
+    _start_all=$_start
+    for _s in $_testdns_servers; do
+        host $_testdns_host $_s
+        _finish=`date +%s`
+        echo $(($_finish - $_start)) "s"
+        _start=$_finish
+    done
+    _finish=`date +%s`
+    echo $(($_finish - $_start_all)) "s overall"
+    unset _testdns_host
+    unset _testdns_servers
+    unset _start
+    unset _start_all
+    unset _finish
+}
+
+testdmidns() {
+    _testdns_servers="roman pluto jeeves tattoo mail01 mail02 austin opus" testdns $@
+}
+
+service() {  
+    # script to assist start/stopping services through sysV init scripts
+    # this is functionally equivalent to the /sbin/service on newer redhat
+
+    if [ -f "/sbin/service" ]; then
+        sudo /sbin/service $@
+        return
+    fi
+    _rc_cmd=$1
+    shift
+    _rc_sudo="sudo"
+    # we need /usr/xpg4/bin/id on Solaris
+    _rc_id="/usr/bin/id"
+    if [ -x "/usr/xpg4/bin/id" ]; then
+        _rc_id="/usr/xpg4/bin/id"
+    fi 
+    if [ "`$_rc_id -u`" = "0" ]; then
+        _rc_sudo=""
+    fi
+    _rc_dir="/etc"
+    if [ ! -d "$_rc_dir/init.d" -a -d "/etc/rc.d/init.d" ]; then
+        _rc_dir="/etc/rc.d"
+    fi
+    if [ "$_rc_cmd" = "list" ]; then
+        /bin/ls -1 $_rc_dir/init.d/
+    else
+        if [ -x "/sbin/service" ]; then
+            $_rc_sudo /sbin/service $_rc_cmd ${1-:"$@"}
+        else
+            (cd / && env - LANG=$LANG PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin HOME=/ $_rc_sudo /bin/bash --login "$_rc_dir"/init.d/$_rc_cmd "$@")
+        fi
+    fi
+    unset _rc_cmd
+    unset _rc_id
+    unset _rc_sudo
+    unset _rc_dir
+}
+    
+chkconfig() {
+    _chkconfig_sudo="sudo"
+    if [ "$#" -le 1 ]; then
+        _chkconfig_list="--list"
+        _chkconfig_sudo=""
+    fi
+    if [ "`id -u`" = "0" ]; then
+        _chkconfig_sudo=""
+    fi
+    $_chkconfig_sudo /sbin/chkconfig $_chkconfig_list $@
+    unset _chkconfig_list
+    unset _chkconfig_sudo
+}
+
+bb() {
+    if [ "$1" = "-d" ]; then
+        _BBDEBUG="$BBDEBUG"
+        BBDEBUG=1; export BBDEBUG
+        shift
+    fi
+    _BBHOME="$BBHOME"
+    BBHOME=/home/bigbro/bb; export BBHOME
+    _PATH="$PATH"
+    PATH=$BBHOME/bin:$BBHOME/ext:$PATH; export PATH
+
+    sudo -u bigbro $@
+
+    if [ -n "$_BBHOME" ]; then
+        BBHOME="$_BBHOME"; export BBHOME
+    else
+        unset BBHOME
+    fi
+    unset _BBHOME
+    PATH="$_PATH"; export PATH
+    unset _PATH
+
+    if [ -n "$_BBDEBUG" ]; then
+        BBDEBUG="$_BBDEBUG"; export BBDEBUG
+    else
+        unset BBDEBUG
+    fi
+    unset _BBDEBUG
+        
+}
+
+showfunc() {
+    lsfunc
+}
+
+lsfunc () 
+{
+    # shows shell functions defined
+    if [ -z "$1" ]; then
+        set | egrep '\(\)'
+    else
+        type $1
+    fi
+}
+
+whichbin() {
+    # Find a named executable file or script in your path (e.g. skip
+    # aliases and shell functions
+    _whichbin=$1
+    OIFS="$IFS"
+    IFS=":"
+    set $PATH
+    IFS="$OIFS"
+
+    for _whichbin_elem in $@ ; do
+        if test -x $_whichbin_elem/$_whichbin; then
+            _thisbin="$_whichbin_elem/$_whichbin"
+            continue
+        fi
+    done
+    
+    echo "$_thisbin"
+    unset _thisbin
+    unset _whichbin
+    unset _whichbin_elem
+}
+
+ifsudo() {
+    # run a command, and if it fails try to sudo run the
+    # command.
+    _ifsudo_cmd=$1
+    shift
+    _ifsudo_arg="$@"
+    
+    "$_ifsudo_cmd" $_ifsudo_arg
+    if [ "$?" -ne "0" ]; then
+        sudo "$_ifsudo_cmd" $_ifsudo_arg
+    fi
+    unset _ifsudo_cmd
+    unset _ifsudo_arg
+}
+
+newdevproject() {
+    mkcd workingfolder
+    mkdir apps
+    mkcd cvs
+    export CVSROOT=:pserver:mrice@cvs:/cvs/development
+    cvs co tools
+    cvs co ant
+    cvs co share
+    export ANT_HOME=$PWD/ant
+    export PATH=$PATH:$ANT_HOME/bin
+
+    echo "Executing 'ant', you should see output along the lines of:"
+    echo "  Buildfile: build.xml does not exist!"
+    echo "  Build failed"
+    echo ""
+
+    ant
+
+    echo "Creating ~/.ant-global.properties"
+    cd ..
+    cat << EOF > ~/.ant-global.properties
+cvs.root=$PWD/cvs
+app.root=$PWD/apps
+EOF
+
+}
+
+prompt() {
+    _prompt_var=$1
+    _prompt_string=$2
+    if [ -z "$_prompt_var" -o -z "$_prompt_string" ]; then
+        echo -e "invalid var\nUsage: prompt var string"
+        return
+    fi
+
+    EchoN "$_prompt_string"
+
+    read ans
+
+    eval "$_prompt_var=\"$ans\""
+}
+
+sbash() {
+    _sbash_LOGDIR="/var/log/sudo.d"
+    _sbash_id=/usr/bin/id
+    _sbash_script_flags="-qa"
+    if [ -x "/usr/xpg4/bin/id" ]; then
+        # typically only solaris
+        _sbash_id=/usr/xpg4/bin/id
+        _sbash_script_flags="-a"
+    fi
+    if [ ! -d "$_sbash_LOGDIR" ]; then
+        echo "ERROR, log directory $_sbash_LOGDIR doesn't exist, call your sysadmin"
+        return;
+    fi
+    _sbash_whoami=`$_sbash_id -un`
+    _sbash_umask=`umask`
+    umask 0077
+    # logfile has username datestamp and pid in it to help keep
+    # logs separate across multiple logins to the same box
+    sudo script $_sbash_script_flags "$_sbash_LOGDIR/$_sbash_whoami.`date +%Y%m%d`.$$"
+    umask $_sbash_umask
+    unset _sbash_umask
+    unset _sbash_LOGDIR
+    unset _sbash_whoami
+    unset _sbash_script_flags
+    unset _sbash_id
+}
+
+ps1() {
+    case "$1" in 
+        1|orig|original|default)
+            export PS1="[\u@\h \w] "
+            ;;
+        2|new|alt*)
+            export PS1="[7m\$? \t \w[0m\n[\u@\h] "
+            ;;
+        3)
+            export PS1="[46;1m\$? \t \w[0m\n[\u@\h] "
+            ;;
+    esac
+}
+
+magic_umask() {
+    _umask=0002
+    case "${1:-$PWD}" in
+        *home/michael*|*home/mrice*)
+            _umask=0007;;
+        *)
+            _umask=0002;;
+    esac
+    umask "$_umask"
+    unset _umask
+}        
+
+oraenv() {
+    _real=`which oraenv 2>/dev/null`
+    if [ -x "$_real" ]; then
+        $_real
+    else
+        export ORACLE_HOME=/nfs/oracle
+        path $ORACLE_HOME/bin
+        ldpath $ORACLE_HOME/lib
+    fi
+}
+    
+bc ()
+{
+    _bc_precision=2
+    # invoke bc smartly
+    # if we supply an expression, evaluate print and return
+    # if not, invoke interactively with -l 
+    if [ "$#" -eq 0 ]; then
+        /usr/bin/bc -l
+        return
+    elif [ "$#" -eq 1 -a "$1" = "-l" ]; then
+        /usr/bin/bc -l
+        return
+    elif [ "$1" = "-p" ]; then
+        shift
+        _bc_precision=$1
+        shift
+    fi
+
+    /usr/bin/bc  <<EOF
+scale=$_bc_precision
+$@
+quit
+EOF
+
+    unset _bc_precision
+}
+
+kmg() {
+    # input in bytes, output in best of K, M, or G
+    # can take input in k if -k specified as first argument
+
+    if [ "$1" = "-k" ]; then
+        shift
+        bytes=$1
+        shift
+        bytes=$((bytes * 1024))
+    else 
+        bytes=$1
+        shift
+    fi        
+
+    _kmg_k=$((bytes/1024))
+    _kmg_m=$((_kmg_k/1024))
+    _kmg_g=$((_kmg_m/1024))
+    
+    echo "$_kmg_g G $_kmg_m M $_kmg_k K $bytes"
+    
+    if [ "$_kmg_g" -ge 1 ]; then
+        _kmg_f=$((_kmg_m - ($_kmg_g * 1024)))
+        _kmg_f=$((_kmg_f/100))
+        echo "${_kmg_g}.${_kmg_f}G"
+    elif [ "$_kmg_m" -ge 1 ]; then
+        _kmg_f=$((_kmg_k - ($_kmg_m * 1024)))
+        _kmg_f=$((_kmg_f/100))
+        echo "${_kmg_m}.${_kmg_f}M"
+    elif [ "$_kmg_k" -ge 1 ]; then
+        _kmg_f=$((bytes - ($_kmg_k * 1024)))
+        _kmg_f=$((_kmg_f/100))
+        echo "${_kmg_k}.${_kmg_f}K"
+    else
+        echo "${bytes}b"
+    fi
+
+    unset _kmg_f
+    unset _kmg_k
+    unset _kmg_m
+    unset _kmg_g
+    unset bytes
+}
+
+patched() {
+    # edit a file and generate a patch
+    filename=$1
+    shift
+    patchfile=$1
+    shift
+    origfile=${1:-$filename.orig}
+    shift
+
+    if [ -z "$patchfile" ]; then
+        echo "You failed to specify a patch file, aborting!"
+        return
+    fi
+
+    if [ ! -f "$filename" ]; then
+        echo "Cannot edit \"$filename\", no such file or directory"
+        return
+    fi
+
+    if [ -f "$origfile" ]; then
+        if yorn "File already exists ($origfile) overwrite? "; then
+            cp "$filename" "$origfile"
+        else
+            echo "Ok, using the existing file as original"
+        fi
+    else
+        cp "$filename" "$origfile"
+    fi
+
+    if [ -f "$patchfile" ]; then
+        if ! yorn "Overwrite patchfile ( $patchfile )? "; then
+            echo "STDOUT is generally not useful so I'm aborting!"
+            return
+        fi
+    fi
+
+    ${EDITOR:-vi} "$filename"
+    diff -Nur "$origfile" "$filename" > "$patchfile"
+}
+                
+   
+yorn() {
+    # ask a question
+    # accept y|Y|n|N as a response
+    # return 1 if y|Y
+    # return 0 if n|N
+    while true; do
+    EchoN "$1" 
+    read ans
+    
+    case "$ans" in
+        y|Y)
+            return 0
+            ;;
+        n|N)
+            return 1
+            ;;
+        *)
+            echo "improper answer, please answer 'y' or 'n'"
+            ;;
+    esac
+    done
+}
+
+question() {
+    # ask a question
+    # accept any string in response
+    # output string for caller to use
+    EchoN "$1"
+    read ans
+    echo "$ans"
+}
+
+dl() {
+    ( cd /sysadmin/dist && wget $@ )
+}
+
+whatprovides() {
+    rpm -q --queryformat '%{NAME}\n' --whatprovides $@
+}
+
+mvim() {
+    # multi-vim, fire up separate gvim instances for each
+    # file given
+    for f in $@; do
+        gvim $f
+    done
+}
+
+mpg123pl() {
+    # play a playlist via mpg123
+    m3ufile=$1
+    dir=`dirname "$m3ufile"`;
+    dir=`cd "$dir" && pwd`;
+    cat "$m3ufile" | while read music; do
+        mpg123 "$dir/$music";
+    done
+    unset dir
+}
+    
+proxy() {
+    if [ "$1" == "on" ]; then
+        export http_proxy=http://proxy:8000/
+    elif [ "$1" == "off" ]; then
+        unset http_proxy
+    fi
+}
+
+id() {
+    # various id commands don't play nice, so we give them a little help
+
+    if [ "$1" = "-u" ]; then
+        /usr/bin/id -u 2>/dev/null || /usr/bin/id -a | awk '{print $1}' | sed 's/uid=\([0-9]*\).*/\1/'
+    else
+        /usr/bin/id $@
+    fi
+}
+
+vinamed() {
+   _NAMEDSRC=/site/etc/hosts/us-aus02.nxp.com
+   sudo vim $_NAMEDSRC
+   sudo ci -l $_NAMEDSRC
+   sudo chmod 644 $_NAMEDSRC
+   (cd /site/etc/hosts && sudo make)
+}
+
+roll() {
+
+    _rolln=$1
+    _rolld=$2
+
+    if [ "${_rolln//d/}" != "$_rolln" ]; then
+        OIFS="$IFS"
+        IFS="d"
+        set $_rolln
+        IFS="$OIFS"
+    
+        _rolln=$1
+        _rolld=$2
+    fi
+
+    if [ -z "$_rolld" ]; then
+        _rolld=$_rolln
+        _rolln=1
+    fi
+    echo -n "${_rolln}d${_rolld}: "
+    for i in `seq 1 $_rolln`; do
+        _roll=$((RANDOM % $_rolld + 1))
+        _rolls="$_rolls $_roll"
+        _rollsum=$((_rollsum + $_roll))
+    done
+
+    echo "($_rolls) = $_rollsum"
+
+    unset _rolln
+    unset _rolld
+    unset _roll
+    unset _rolls
+    unset _rollsum
+}
+alias site='cd /site$PWD'
+alias upsite='cd ${PWD##/site}'
+
+dohost() {
+    _dhost_local=0
+    _dhost_root=0
+    while [ "$1" = "-l" -o "$1" = "-r" ]; do
+        case "$1" in
+            -l) _dhost_local=1;;
+            -r) _dhost_root=1;;
+        esac
+        shift
+    done
+
+    _host=$1
+    shift;
+
+    if [ "$_dhost_local" -eq 1 ]; then
+        _dhost_command=""
+    else
+        _dhost_command="ssh "
+    fi
+
+    if [ "$_dhost_root" -eq 1 ]; then
+        _dhost_command="sudo $_dhost_command"
+    fi
+
+    unset _dhost_local
+    unset _dhost_root
+
+    _args="$@"
+
+    _hargs=${_args//\{\}/$_host}
+
+    if [ "$_args" != "$_hargs" ]; then
+        _args="$_hargs"
+    else
+        _args="$_host $_hargs"
+    fi
+    unset _hargs
+
+    echo "******* $_host *******"
+    ping -c 1 -w 1 $_host > /dev/null && $_dhost_command $_args || echo "DOWN"
+    unset _dhost_command
+    unset _host
+    unset _args
+}
+
+dohosts() {
+    _dhost_args=""
+    while [ "$1" = "-l" -o "$1" = "-r" ]; do
+        _dhost_args="$_dhost_args $1"
+        shift;
+    done
+    _hosts=""
+    while [ "$#" -gt 1 ]; do
+        if [ "$1" = "--" ]; then
+            break
+        fi
+        _hosts="$_hosts $1"
+        shift;
+    done
+    shift
+    _command="$@"
+    for _host in $_hosts; do
+        dohost $_dhost_args $_host $_command
+    done
+    unset _dhost_args
+    unset _host
+    unset _hosts
+}
+
+pwtest() {
+perl -e '$c=shift;print "pass: ";chomp($p=<STDIN>);$e=crypt($p,$c); print "$e\n"; print $e eq $c && "Matches\n" || "No match\n" ' ${1="$@"}
+}
+
+synergy() {
+    
+    if [ -z "$_SYNERGY_HN" ]; then
+    case "`uname -n`" in
+        ricemlx*) _SYNERGY_HN=ricemlx.wbi.nxp.com;;
+        *) _SYNERGY_HN="`hostname | awk -F. '{print $1}'`.wbi.nxp.com";;
+    esac
+    fi
+    _synergy_PATH=$PATH
+    for d in ~/tools/synergy*/bin; do
+    	_synergy_PATH=$_synergy_PATH:$d
+    done
+    env PATH=$PATH:$_synergy_PATH synergys -n $_SYNERGY_HN -c ~/.synergy/`hostname`.conf
+    unset _SYNERGY_HN
+    unset _synergy_PATH
+}
+
+iptohex() {
+    perl -e 'map {printf "%02X", $_} split(/\./,shift); print "\n";' $@
+}
+
+activate() {
+    sudo /home/sysadm/scripts/user_admin/activate
+}
+inactivate() {
+    sudo /home/sysadm/scripts/user_admin/inactivate
+}
+
+
+firstword() {
+    awk '{print $1}' $@
+}
+
+lastword() {
+    awk '{print $NF}' $@
+}
+
+canonname() {
+    host $@ | lastword | xargs -i host {} | lastword
+}
+
+parp() {
+    # ping and arp
+    ping -c 1 -t 1 $@
+    arp $@
+}

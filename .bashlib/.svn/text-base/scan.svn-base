@@ -1,0 +1,52 @@
+#
+# $Id: scan,v 1.2 2002/07/09 06:22:56 mrice Exp $ 
+# support for my hp usb scanner at home, uses the sane utility
+# scanimage and sets up a bunch of default parameters for it
+#
+scan() {
+    while [ "$#" -ge 1 ]; do
+        case $1 in
+      --resolution|-r)
+          resolution=$2
+        shift
+        ;;
+      --device|-d)
+          device=$2
+        shift
+        ;;
+      --mode|-m)
+          mode=$2
+        shift
+        ;;
+      --output|-o)
+          output=$2
+        shift
+        ;;
+          --tmpfile|-t)
+          tmpfile=$2
+        shift
+        ;;
+          *)
+          output=$1
+        ;;
+    esac
+        shift
+    done
+    resolution=${resolution:-150}
+    device=${device:-hp:/dev/usbscanner}
+    mode=${mode:-color}
+    output=${output:-out.jpg} 
+    if [ "$output" = "test.jpg" ]; then
+        echo "using default output file of out.jpg"
+    fi
+    tmpfile=${tmpfile:-out.png}
+
+    scanimage -d $device --mode $mode --resolution $resolution > $tmpfile
+    convert $tmpfile $output
+    /bin/rm -f $tmpfile
+    unset resolution
+    unset device
+    unset mode
+    unset output
+    unset tmpfile
+}

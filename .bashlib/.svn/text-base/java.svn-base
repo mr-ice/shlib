@@ -1,0 +1,10 @@
+#!/bin/sh
+
+for JH in /usr/java/* /usr/local/java/* /usr/local/java; do
+    if [ -f "$JH/bin/java" ]; then
+        export JAVA_HOME=$JH
+        continue
+    fi
+done
+
+

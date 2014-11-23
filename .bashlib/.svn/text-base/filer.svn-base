@@ -1,0 +1,24 @@
+
+quotalookup() {
+
+    _FILER=${FILER:-aua}
+    _QUOTAS=/net/$_FILER/vol/vol0/etc/quotas
+    _DATA=/site/eng/sysadm/scripts/findstat/data/$_FILER
+
+    _QTREE=`grep '^##> /vol' $_QUOTAS | awk '$4==target{print $2}' target=$1 | awk -F/ '{print $4}'`
+
+    _MATCHES=`echo $_QTREE | wc -w`
+
+    if [ $_MATCHES -ne 1 ]; then
+        echo "ERROR, found $_MATCHES : $_QTREE"
+        return
+    fi
+
+    zgrep -hE "^tree.*$_QTREE" $_DATA/quota-report/current.gz
+
+    unset _QTREE
+    unset _MATCHES
+    unset _DATA
+    unset _QUOTAS
+    unset _FILER
+} 

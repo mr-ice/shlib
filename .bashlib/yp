@@ -1,0 +1,83 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Shell functions for NIS administration
+
+
+ypmake() {
+    _ypmake_sudo="sudo"
+    if [ "`id -a`" = "0" ]; then
+        _ypmake_sudo="";
+    fi;
+    
+    (cd /var/yp && $_ypmake_sudo /usr/bin/make $@)
+
+    unset _ypmake_sudo
+}
+
+ypam() {    # reports the name of the auto.master NIS map
+    ypcat -k auto_master >/dev/null 2>/dev/null
+    if [ "$?" -eq 0 ]; then
+        echo auto_master
+        return
+    fi
+    ypcat -k auto.master > /dev/null 2>/dev/null
+    if [ "$?" -eq 0 ]; then
+        echo auto.master
+        return
+    fi
+    echo unknown
+}
+
+ypap() {    # reports the name of the auto.project NIS map
+    ypcat -k `ypam` | egrep '^/pr(j|oject) ' | awk '{print $2}' | head -1 
+}
+
+ypvim() {
+    EDITOR=vim ypedit $@
+}
+ypedit() {
+    FILELIST="$@"
+    sudo -v
+    for file in $FILELIST; do
+        sudo co -l /var/yp/etc/$file || sudo rcs -l /var/yp/etc/$file
+        if [ -z "$FQFILE" ]; then
+            FQFILE="/var/yp/etc/$file"
+        else
+            FQFILE="$FQFILE /var/yp/etc/$file"
+        fi
+    done
+    sudo ${EDITOR:-vim} $FQFILE
+    sudo ci -l $FQFILE
+    unset FQFILE
+    unset FILELIST
+}
+ypgrep() {
+    _ypgrep_TERM=$1; shift
+    if [ "${_ypgrep_TERM##-}" != "${_ypgrep_TERM}" ]; then
+        _ypgrep_ARGS=$_ypgrep_TERM;
+        _ypgrep_TERM=$1; shift
+    fi
+    for map in $@; do
+        ypcat -k $map | grep $_ypgrep_ARGS $_ypgrep_TERM
+    done
+    unset _ypgrep_TERM
+    unset _ypgrep_ARGS
+}
+
+ypemail() {
+    ypgrep $@ passwd | awk -F: '{print $5}' |  awk -F, '{print $1}'
+}
+     

@@ -1,0 +1,50 @@
+
+# secure password list manipulation routines
+# $Id: spl,v 1.4 2003/10/30 16:53:40 mrice Exp $
+spl() {
+    case "$1" in
+        common|normal|secure)
+            _spl_type="$1"
+            ;;
+        *)
+            echo "You must specify one of 'common', 'normal', or 'secure'"
+            ;;
+    esac
+
+    _spl_file=foo;
+    if test -f /data/it/private/spl.$_spl_type.gpg; then
+        _spl_file="/bin/cat /data/it/private/spl.$_spl_type.gpg";
+    else
+        _spl_file="sudo /bin/cat /opt/secure/spl.$_spl_type.gpg";
+        sudo ls >/dev/null;
+    fi;
+    $_spl_file | /usr/bin/gpg | /usr/bin/less -I;
+    unset _spl_file
+    unset _spl_type
+}
+
+decrypt_spl() {
+    srm -f spl.txt
+    gpg spl.txt.gpg
+    srm -f spl.txt,v
+    gpg spl.txt,v.gpg
+}
+
+encrypt_spl() {
+    case "$1" in
+        common|normal|secure)
+            _encrypt_spl_type="$1"
+            ;;
+        *)
+            echo "You must specify one of 'common', 'normal', or 'secure'"
+            ;;
+    esac
+
+    awk '/^BEGIN opts/{yes=1;next}/^END opts/{yes=0}yes{print}' spl.$_encrypt_spl_type > /tmp/opts$$
+    chmod 600 spl.$_encrypt_spl_type spl.$_encrypt_spl_type.gpg spl.$_encrypt_spl_type,v spl.$_encrypt_spl_type,v.gpg
+    gpg -e --options /tmp/opts$$ < spl.$_encrypt_spl_type > spl.$_encrypt_spl_type.gpg
+    gpg -e --options /tmp/opts$$ < spl.$_encrypt_spl_type,v > spl.$_encrypt_spl_type,v.gpg
+    chmod 400 spl.$_encrypt_spl_type.gpg spl.$_encrypt_spl_type,v.gpg
+    rm -f /tmp/opts$$
+    unset _encrypt_spl_type
+}

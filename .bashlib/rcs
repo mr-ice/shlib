@@ -1,0 +1,35 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+rcsedit() {
+    # check that the file is already in rcs 
+    # if not, prompt for a description of the file and put it in rcs
+    # if yes, check locks
+    # if not locked, lock it
+    # if locked, proceed to edit
+    # call ${EDITOR:-vim}
+    # check in the changes, prompt for changelog entry
+    # unlock file
+    # fix/set perms
+    
+    while [ "$#" -ge 1 ]; do
+        # this will establish RCS file and lock if needed
+        rcsdiff "$1" && $DOSUDO ci -l "$1" || $DOSUDO rcs -l "$1" 
+        $DOSUDO ${EDITOR:-vi} "$1"
+        $DOSUDO ci -u "$1" # checks in file, prompts for changelog
+        $DOSUDO chmod 664 "$1" # need a better way than hardcoding mode
+        shift
+    done
+}

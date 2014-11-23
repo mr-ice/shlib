@@ -1,0 +1,13 @@
+
+hex() {
+    perl -e 'printf "%02x\n", $ARGV[0]' $1
+}
+
+hexip() {
+    OIFS=$IFS;
+    IFS=".";
+    set $1;
+    printf %02X $1 $2 $3 $4;
+    echo "";
+    IFS=$OIFS;
+}

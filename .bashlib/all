@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# $Id: all,v 1.5 2003/10/30 16:53:40 mrice Exp $
+# library wrapper...source this and you get all the files in this directory
+# sourced.
+
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+LIBRARY=$HOME/.shlib
+
+# skips . files by virtue of the glob -- easy to disable
+# things that way
+for library in $LIBRARY/*; do
+    [ "`basename $library`" = "all" ] && continue
+    [ "`basename $library`" = "CVS" ] && continue
+    [ "`basename $library`" = "NOTES" ] && continue
+    [ "${library#.}" != "$library" ] && continue    # starts with a .
+    [ "${library%\~}" != "$library" ] && continue   # ends with a ~
+    [ ! -f "$library" ] && continue
+
+    . $library
+done

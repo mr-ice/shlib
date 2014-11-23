@@ -1,0 +1,59 @@
+
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+function relog {
+
+#    if ! /usr/kerberos/bin/klist -s; then
+#        echo "You do not have a credentials file"
+#        return
+#    fi
+
+    echo -n "Attempting to renew..."
+    if /usr/kerberos/bin/kinit -R ; then
+        echo "Success"
+    else
+        echo "Failed"
+        echo "Could not renew, attempting to fetch new" 
+        if /usr/kerberos/bin/kinit -l 3d -r 7d $USER; then
+            echo "Success"
+        else
+            echo "Failed"
+            return
+        fi
+    fi
+    /usr/bin/aklog
+}
+
+function akinit
+{
+    count=$#
+    user=$USER
+    if [ $count -eq 1 ]
+    then
+        echo $1
+        user=$1
+        echo $user
+    elif [ $count -gt 1 ]
+    then
+        echo "usage: akinit"
+        echo "or"
+        echo "akinit $USER"
+        return 1
+    fi
+
+    /usr/kerberos/bin/kinit -l "1d" $user
+}
+

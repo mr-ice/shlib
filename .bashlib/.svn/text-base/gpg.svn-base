@@ -1,0 +1,8 @@
+# gpg functions that I like
+# $Id: gpg,v 1.2 2002/07/09 06:22:56 mrice Exp $
+gpgcat() {
+    gpg -o - $1
+}    
+gpgless() {
+    gpgcat $1 | less
+}

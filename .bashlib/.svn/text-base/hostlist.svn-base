@@ -1,0 +1,16 @@
+hostlist ()
+{
+    # this function is most effective with the host list
+    # format created for pwadmin in conf.hosts.  In fact
+    # that file is hardcoded here.
+    if [ "x$1" = "xwhere" ]; then
+        shift;
+        AWKFILTER="$@";
+    fi;
+    nocomment conf.hosts | awk -F: "$AWKFILTER{print \$1}"
+}
+
+loginhosts ()
+{
+     host loginhost | awk '{print $NF}' | xargs -i host {} | awk '{print $NF}'
+}

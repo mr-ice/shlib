@@ -1,0 +1,88 @@
+function remember() {
+    _remember_date=`date +%Y%m%d-%H%M%S`
+
+    if [ $1 = "overwrite" ]; then
+        overwrite=1
+        shift;
+    fi
+
+    if [ $1 = "as" ]; then
+        shift;
+    fi
+
+    _remember_as=$1
+    
+    shift
+    
+    _remember_dir="$HOME/.remember/$_remember_as$_remember_date"
+
+    if [ "$overwrite" -eq 1 ]; then
+        rm -rf "$_remember_dir*"
+    fi
+
+    while [ -d "$_remember_dir" ]; do
+        _remember_dir="${_remember_dir}X"
+    done
+    
+    mkdir -p "$_remember_dir"
+   
+    echo "Cut and paste the desired command into the blank space below, ^D to finish"
+    cat > "$_remember_dir/command"
+
+    # save the environment
+    # create sample output
+    # save a notes file
+    # these may help us figure out what we were trying to do when we
+    # stumble upon these scripts years later
+
+    env > $_remember_dir/environment
+    eval "$sh $_remember_dir/command 1>$_remember_dir/stdout 2>$_remember_dir/stderr"
+    cat <<EOF>$_remember_dir/notes
+    Created with 'remember' this directory represents a command that I 
+    wanted to save for some reason.  The command itself is in 'command'
+    with all it's arguments and redirects.
+
+    The environment saved in 'environment' is what was in place when
+    I ran the 'remember' command, and is preserved here to help with
+    diagnosis of problems running 'command' later.  
+
+    There may be some academic value in running this as
+    . environment
+    cd $PWD
+    /bin/bash command
+EOF
+
+    # create an alias 
+    eval "alias $_remember_as=\"sh $_remember_dir/command\""
+    # print the alias to me so that I know everything thus far worked
+    alias $_remember_as
+    # save the alias to a script to be sourced on login
+    alias $_remember_as >> ~/.remember.aliases
+
+    # that's it, get outta here
+    unset _remember_as
+    unset _remember_dir
+    unset _remember_date
+}
+# original (unimplemented)
+    # The remember function will help you "remember" command lines
+    # by storing them as scripts and giving them aliases.
+    #
+    # usage has three forms
+    #   remember [-v]
+    #       without arguments the remember does an initialize where it
+    #       reads in the aliases file for you.  With -v it will also
+    #       print out the aliases so that you can see what you remembered.
+    #       TODO - verify the aliases point to valid files
+    #       TODO - remove aliases and scripts that are no longer valid
+    #   remember what [[<as|overwrite>] name]
+    #       remember command line $what (with all it's args and
+    #       pipes, etc), as a script called 'name'.  scripts will be
+    #       in datestamped directories in $HOME/.remember/name-date
+    #       and an alias for 'name' will be created to point to the 
+    #       current one.  With the 'overwrite' arg all previous scripts
+    #       called 'name' will be removed before creating this one
+    #   remember edit name
+    #       edit the script for the alias named 'name'
+
+    

@@ -1,0 +1,19 @@
+oraenv() {
+    if [ -z "$ORACLE_BASE" ]; then
+        echo "ORACLE_BASE not set, please set it before calling oraenv()"
+        return;
+    fi
+
+    ORACLE_HOME=$ORACLE_BASE
+        export ORACLE_HOME
+    PATH=$ORACLE_HOME/bin:$PATH
+        export PATH
+    LD_LIBRARY_PATH=$ORACLE_HOME/lib
+        export LD_LIBRARY_PATH
+    NLS_LANG=AMERICAN_AMERICA.WE8ISO8859P1
+        export NLS_LANG
+    ORA_NLS33=$ORACLE_BASE/ocommon/nls/admin/data
+        export ORA_NLS33
+    TNS_ADMIN="/var/opt/oracle"
+        export TNS_ADMIN
+}

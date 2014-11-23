@@ -1,0 +1,36 @@
+bhostlist() {
+    bhosts $@ | awk '$1!="HOST_NAME"&&$1!="lost_and_found"{print $1}'
+}
+
+vilsf() {
+    LSFCONF=/cadappl_sde/lsf/conf
+    LSBCONF=$LSFCONF/lsbatch/aus62/configdir
+    while true; do
+
+    cat << EOF 
+    1) $LSFCONF/lsf.cluster.aus62
+    2) $LSBCONF/lsb.hosts
+    3) $LSBCONF/lsb.users
+    4) $LSBCONF/lsb.queues
+    x) exit
+EOF
+    read ans
+    case "$ans" in
+    x) return;;
+    1) DOSUDO="sudo -u lsfadm" rcsedit $LSFCONF/lsf.cluster.aus62;;
+    2) DOSUDO="sudo -u lsfadm" rcsedit $LSBCONF/lsb.hosts;;
+    3) DOSUDO="sudo -u lsfadm" rcsedit $LSBCONF/lsb.users;;
+    4) DOSUDO="sudo -u lsfadm" rcsedit $LSBCONF/lsb.queues;;
+    esac
+done
+    unset LSFCONF
+    unset LSBCONF
+}
+    
+bqueuelist() {
+    bhostlist | while read host; do
+        printf "%-15s: " $host
+        bqueues -m $host | awk '$1!="QUEUE_NAME"{printf "%s ",$1}'
+        echo ""
+    done
+} 

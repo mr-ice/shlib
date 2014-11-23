@@ -1,0 +1,27 @@
+
+
+function favorite() {
+    title=$1
+    url=$2
+
+    test -n "$title" || prompt title "Title: "
+    test -n "$url" || prompt url "URL: "
+
+    mkdir -p "$HOME/public_html/favorites"
+    cat <<EOF > "$HOME/public_html/favorites/$title.html"
+<html>
+<head>
+<meta refresh="$url:1">
+</head>
+<body bgcolor=white>
+<a href="$url">$title</a>
+</body>
+</html>
+
+EOF
+
+    unset title
+    unset url
+}
+
+    

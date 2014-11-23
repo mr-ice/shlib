@@ -1,0 +1,51 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+bhostlist() {
+    bhosts $@ | awk '$1!="HOST_NAME"&&$1!="lost_and_found"{print $1}'
+}
+
+vilsf() {
+    LSFCONF=/cadappl_sde/lsf/conf
+    LSBCONF=$LSFCONF/lsbatch/aus62/configdir
+    while true; do
+
+    cat << EOF 
+    1) $LSFCONF/lsf.cluster.aus62
+    2) $LSBCONF/lsb.hosts
+    3) $LSBCONF/lsb.users
+    4) $LSBCONF/lsb.queues
+    x) exit
+EOF
+    read ans
+    case "$ans" in
+    x) return;;
+    1) DOSUDO="sudo -u lsfadm" rcsedit $LSFCONF/lsf.cluster.aus62;;
+    2) DOSUDO="sudo -u lsfadm" rcsedit $LSBCONF/lsb.hosts;;
+    3) DOSUDO="sudo -u lsfadm" rcsedit $LSBCONF/lsb.users;;
+    4) DOSUDO="sudo -u lsfadm" rcsedit $LSBCONF/lsb.queues;;
+    esac
+done
+    unset LSFCONF
+    unset LSBCONF
+}
+    
+bqueuelist() {
+    bhostlist | while read host; do
+        printf "%-15s: " $host
+        bqueues -m $host | awk '$1!="QUEUE_NAME"{printf "%s ",$1}'
+        echo ""
+    done
+} 

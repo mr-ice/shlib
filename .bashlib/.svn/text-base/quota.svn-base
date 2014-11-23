@@ -1,0 +1,79 @@
+viq() {
+    viquota $@
+}
+
+fileralias() {
+    case "$1" in
+        aua|au-fs-01|aua.*|au-fs-01.*)
+            echo aua;;
+        auca|au-fs-03|auca.*|au-fs-03.*)
+            echo auca;;
+        aucb|au-fs-04|aucb.*|au-fs-04.*)
+            echo aucb;;
+    esac
+}
+mountof() {
+    ( df --portability $1 2>/dev/null || df -k $1 2>/dev/null )  | awk '$1!="Filesystem"{print $1}'
+}
+filerof() { # find the filer a given path is mounted from
+    mountof $1 | awk -F: '{print $1}'
+}
+volumeof() { # find the volume name of a given path
+    mountof $1 | awk -F: '{print $2}' | awk -F/ '{print $3}'
+}
+qtreeof() { # find the volume name of a given path
+    mountof $1 | awk -F: '{print $2}' | awk -F/ '{print $4}'
+}
+
+fileraliasof() {
+    fileralias `filerof $@`
+}
+cdna() {
+    echo cd /na/`fileraliasof $1`/`volumeof $1`/`qtreeof $1`
+    cd /na/`fileraliasof $1`/`volumeof $1`/`qtreeof $1`
+} 
+viquota() {
+    for arg in $@; do
+
+    if [ -f $arg -o -d $arg ]; then
+        FILER=`filerof $arg`
+        FILER=`fileralias $FILER`
+        PATTERN=`qtreeof $arg`
+        if [ -z "$PATTERN" ]; then PATTERN="."; fi
+    else
+        FILER=$1
+        PATTERN="vol00"
+    fi
+    QUOTAFILE="/na/${FILER}/vol0/etc/quotas"
+    sudo vim +/$PATTERN $QUOTAFILE
+    CHANGED="`rcsdiff $QUOTAFILE 2>/dev/null | grep '^[<>]' | sed -e 's,.*/vol/\([^\/]*\)/.*,\1,' | sort -u`"
+    sudo ci -l $QUOTAFILE
+    for v in $CHANGED; do
+        sudo ssh ${FILER} quota resize $v
+    done 
+    
+    done
+
+    unset FILER
+    unset CHANGED
+    unset QUOTAFILE
+    unset PATTERN
+}
+viexports() {
+    if [ "x$1" != "x" ]; then
+        FILER=$1
+    fi
+    FILER=${FILER:-aua}
+    FILERDIR=/na/${FILER}
+    EXPORTFILE=$FILERDIR/vol0/etc/exports
+    sudo vim $EXPORTFILE
+    sudo ci -l $EXPORTFILE
+    sudo ssh ${FILER} exportfs -a
+    unset FILER
+    unset FILERDIR
+    unset EXPORTFILE
+}
+
+vie() {
+    viexports $@
+}

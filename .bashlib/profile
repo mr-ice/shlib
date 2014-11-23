@@ -1,0 +1,32 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# functions to handle profile.tgz
+# $Id: sync,v 1.4 2003/10/30 16:53:40 mrice Exp $
+
+# create a new profile.tgz
+tarprofile() {
+    (cd $HOME/.skel && tar -chzf $HOME/profile.tgz ./)
+}
+
+# create a new profile.tgz only if it's > 1 hour old
+ntarprofile() {
+    _ntarprofile=`/bin/ls -1t $HOME/.shlib/* $HOME/profile.tgz | head -1`
+    if [ "$_ntarprofile" != "$HOME/profile.tgz" ]; then
+        echo "Regenerating $HOME/profile.tgz"
+        tarprofile
+    fi
+    unset _ntarprofile
+}

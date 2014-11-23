@@ -1,0 +1,28 @@
+# synch project stuff
+
+projdir() { 
+    export ProjID=$1
+
+    export SYNCHAWK="sudo -u synch awk"
+
+    export SYNC_PROJECT_BASE=/prj/${ProjID}
+    export SYNC_PRJDIR=${SYNC_PROJECT_BASE}/synchronicity_NXP
+    if [ ! -d "$SYNC_PRJDIR" ]; then
+        export SYNC_PRJDIR={$SYNC_PROJECT_BASE}/synchronicity
+    fi
+    export SYNC_PROJ_CONFIG=${SYNC_PROJECT_BASE}/proj_config/sync_NXP
+    if [ ! -d "$SYNC_PROJ_CONFIG" ]; then
+        export SYNC_PROJ_CONFIG=${SYNC_PROJECT_BASE}/proj_config/sync
+    fi
+    export SYNC_CONFIG=${SYNC_PRJDIR}/sync_config
+    
+    export RDS_SYNC_VER=`$SYNCHAWK '$1=="syncver"{print $2}' $SYNC_CONFIG/config`
+    export SYNC_CUSTOM_DIR=/home/synch/sync_custom_dir/${RDS_SYNC_VER}
+    export SYNC_DIR=/rds/prod/tools/syncinc/${RDS_SYNC_VER}/syncinc
+    export SYNC_SERVER_PORT=`$SYNCHAWK '$1=="syncserverport"{print $2}' $SYNC_CONFIG/config`
+    export SYNC_APACHE_SERVER=`$SYNCHAWK '$1=="syncserverhost"{print $2}' $SYNC_CONFIG/config`
+    export SYNC_SERVER=`host $SYNC_APACHE_SERVER | awk '/nickname/{print $NF}' | cut -d. -f1`
+    export SYNC_POSTGRES_SERVER=$((SYNC_SERVER_PORT + 20000))
+    export SYNC_SRV_VAULT=$SYNC_PRJDIR/syncdata/server_vault
+    export SYNC_SRV_METADT=$SYNC_PRJDIR/syncdata/server_metadat
+}

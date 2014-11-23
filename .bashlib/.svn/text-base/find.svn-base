@@ -1,0 +1,24 @@
+# do a find in directories read from stdin
+olderthan() {
+    age=${age:-180}     # days
+    while read d; do
+    echo "************ FILE LISTING ************"
+    sudo -u autoload find "$d" -type f -ls
+    echo "************ FILES OLDER THAN $o DAYS ************"
+    sudo -u autoload find "$d" -type f -mtime +$o -ls
+    done
+}
+
+rmolderthan() {
+    age=${age:-180}     # days
+    while read d; do
+    sudo -u autoload find "$d" -type f -mtime +$o -exec rm -f {} \; -print
+    done
+}
+
+findls() {
+    find . -name .snapshot -prune -o -type f -ls
+}
+
+
+

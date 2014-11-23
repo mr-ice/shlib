@@ -1,0 +1,17 @@
+# functions to handle profile.tgz
+# $Id: sync,v 1.4 2003/10/30 16:53:40 mrice Exp $
+
+# create a new profile.tgz
+tarprofile() {
+    (cd $HOME/.skel && tar -chzf $HOME/profile.tgz ./)
+}
+
+# create a new profile.tgz only if it's > 1 hour old
+ntarprofile() {
+    _ntarprofile=`/bin/ls -1t $HOME/.shlib/* $HOME/profile.tgz | head -1`
+    if [ "$_ntarprofile" != "$HOME/profile.tgz" ]; then
+        echo "Regenerating $HOME/profile.tgz"
+        tarprofile
+    fi
+    unset _ntarprofile
+}

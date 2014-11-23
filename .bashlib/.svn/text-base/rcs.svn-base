@@ -1,0 +1,20 @@
+rcsedit() {
+    # check that the file is already in rcs 
+    # if not, prompt for a description of the file and put it in rcs
+    # if yes, check locks
+    # if not locked, lock it
+    # if locked, proceed to edit
+    # call ${EDITOR:-vim}
+    # check in the changes, prompt for changelog entry
+    # unlock file
+    # fix/set perms
+    
+    while [ "$#" -ge 1 ]; do
+        # this will establish RCS file and lock if needed
+        rcsdiff "$1" && $DOSUDO ci -l "$1" || $DOSUDO rcs -l "$1" 
+        $DOSUDO ${EDITOR:-vi} "$1"
+        $DOSUDO ci -u "$1" # checks in file, prompts for changelog
+        $DOSUDO chmod 664 "$1" # need a better way than hardcoding mode
+        shift
+    done
+}

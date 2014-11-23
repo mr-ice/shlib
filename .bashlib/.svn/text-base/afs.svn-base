@@ -1,0 +1,44 @@
+
+function relog {
+
+#    if ! /usr/kerberos/bin/klist -s; then
+#        echo "You do not have a credentials file"
+#        return
+#    fi
+
+    echo -n "Attempting to renew..."
+    if /usr/kerberos/bin/kinit -R ; then
+        echo "Success"
+    else
+        echo "Failed"
+        echo "Could not renew, attempting to fetch new" 
+        if /usr/kerberos/bin/kinit -l 3d -r 7d $USER; then
+            echo "Success"
+        else
+            echo "Failed"
+            return
+        fi
+    fi
+    /usr/bin/aklog
+}
+
+function akinit
+{
+    count=$#
+    user=$USER
+    if [ $count -eq 1 ]
+    then
+        echo $1
+        user=$1
+        echo $user
+    elif [ $count -gt 1 ]
+    then
+        echo "usage: akinit"
+        echo "or"
+        echo "akinit $USER"
+        return 1
+    fi
+
+    /usr/kerberos/bin/kinit -l "1d" $user
+}
+

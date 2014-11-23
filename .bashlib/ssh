@@ -1,0 +1,60 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# $Id: ssh,v 1.3 2003/10/30 16:53:40 mrice Exp $
+# SSH support functions
+removekey() {
+    # remove an ssh host key from .ssh/known_hosts*
+    # param is list of keywords to remove
+    
+    REMCMD="sed"
+    REMHOME="$HOME"
+    if [ "$1" = "-r" ]; then
+        shift
+        REMCMD="sudo sed"
+        REMHOME="/root"
+    fi
+    for host in $@; do
+        echo -n "Removing $host"
+        IP=`host $host | awk '{print $NF}'`
+        $REMCMD -i -e "/$host/d" -e "/$IP/d" $REMHOME/.ssh/known_hosts >/dev/null 2>&1 && echo -n "...ok "
+        $REMCMD -i -e "/$host/d" -e "/$IP/d" $REMHOME/.ssh/known_hosts2 >/dev/null 2>&1 && echo -n "...ok "
+        echo ""
+    done
+    unset REMCMD
+    unset REMHOME
+}
+
+findagent() {
+    # find a running agent and set up the env to talk to it
+    _findagent_whoami=`whoami`
+    SSH_AGENT_PID=`ps -fu $_findagent_whoami | awk '$8~/ssh-agent$/{print $2}'`
+    unset _findagent_whoami
+
+    if [ -z "$SSH_AGENT_PID" ]; then
+        echo "Couldn't find running ssh-agent, perhaps you need to start one" \
+            >&2
+        return
+    fi
+
+    _agent_auth_id=$((SSH_AGENT_PID - 1))
+    SSH_AUTH_SOCK=`/bin/ls /tmp/ssh*/agent.$_agent_auth_id`
+
+    export SSH_AUTH_SOCK
+    export SSH_AGENT_PID
+
+    unset _agent_pid
+    unset _agent_auth_id
+}

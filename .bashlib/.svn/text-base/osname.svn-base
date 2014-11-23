@@ -1,0 +1,48 @@
+osname() {
+    if [ "$1" = "-s" ]; then
+        case "`uname -s`" in
+            Linux|linux)
+                echo "rh"
+                ;;
+            Solaris|SunOS|solaris)
+                echo "sol"
+                ;;
+        esac
+    else
+        uname -s
+    fi
+}
+
+redhat_ver () {
+    perl -ne '/release (\S+) / && print $1' /etc/redhat-release
+}
+is_redhat () {
+    [ -f "/etc/redhat-release" ] && return 0
+    return 1
+}
+is_solaris () {
+    [ "`uname -s`" = "SunOS" ] && return 0
+    return 1
+}
+solaris_ver () {
+    `uname -r`
+}
+
+osrel() {
+    # does a uname -r with some formatting
+
+    if is_redhat; then
+        _osrel_ver=`redhat_ver`
+        if [ "x$1" = "x-nd" ]; then
+            _osrel_ver=`echo $_osrel_ver | sed -e 's/\.//g'`
+        fi
+        echo $_osrel_ver
+    elif is_solaris; then
+        _osrel_ver=`solaris_ver`
+        _osrel_ver=`echo $_osrel_ver | sed -e 's/5\.//'`
+        echo $_osrel_ver
+    else
+        echo "Unknown"
+    fi
+    unset _osrel_ver
+}

@@ -1,0 +1,29 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# do a find in directories read from stdin
+olderthan() {
+    age=${age:-180}     # days
+    while read d; do
+    echo "************ FILE LISTING ************"
+    sudo -u autoload find "$d" -type f -ls
+    echo "************ FILES OLDER THAN $o DAYS ************"
+    sudo -u autoload find "$d" -type f -mtime +$o -ls
+    done
+}
+
+
+
+

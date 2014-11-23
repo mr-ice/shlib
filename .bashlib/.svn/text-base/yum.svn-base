@@ -1,0 +1,7 @@
+function yum() {
+    http_proxy= sudo yum $@
+}
+
+function testyum() {
+    yum --enablerepo=custom-testing --enablerepo=updates-testing $@
+}

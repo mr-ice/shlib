@@ -1,0 +1,14 @@
+linkjavaplugin() {
+    # create the symlink so that the browser can use the
+    # java plugin
+
+    JAVABIN=`which java`
+    
+    JAVABASE=`dirname $JAVABIN`
+    JAVABASE=`dirname $JAVABASE`
+
+    PLUGIN=$JAVABASE/jre/plugin/i386/ns7/libjavaplugin_oji.so
+
+    mkdir -p ~/.mozilla/plugins
+    ln -s $PLUGIN ~/.mozilla/plugins/
+}

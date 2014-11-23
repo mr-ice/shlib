@@ -1,0 +1,9 @@
+snaplist() {
+    # filer volume
+    sudo ssh $1 snap list $2 | awk '/----/{GO=1;next}GO==1{print $NF}'
+}
+
+snapdelete() {
+    # filer volume
+    snaplist $1 $2 | xargs -i sudo ssh $1 snap delete $2 {}
+}

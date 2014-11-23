@@ -1,0 +1,102 @@
+shlib - shell functions in bash or zsh
+Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+
+This directory comprises my shell function library.  The functions here
+can be run as commands in a bourne compatible shell.   Some functions
+that are zsh specific are kept separately.
+
+All the programs in this repository are available at
+https://github.com/mr-ice/shlib.git and are covered by the GNU Affero General
+Public License unless they contain a different license.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+all     - this is a driver for sourcing all the rest of the files, if you
+          don't want all the functions, rename with a leading . or remove
+          them.  There is also an exception list in this file so that it 
+          doesn't call itself recursively (so don't rename it either), and 
+          so that it skips i.e. this file (NOTES -- don't rename).
+
+convert             - conversion functions
+    hex()           - does a quick decimal to hex conversion using perl
+
+find                - stores some useful find parameters
+    olderthan()     - reads days from $age, reads directories to scan from stdin
+    rmolderthan()   - same as above but does a rm instead of ls 
+    findls()        - ignore .snapshot but do an ls of all files
+
+gpg                 - gnupg (pgp clone) quick commands
+    gpgcat()        - cat a file using gpg
+    gpgless()       - cat a file using gpg through less
+
+misc                - lots of miscellany
+    SetNeedsEchoN() - helper function for EchoN    
+    EchoN()         - does an echo -n or echo "$@\c" whichever works
+    nocomment()     - removes comments from a file or stdin
+    mkcd()          - create and cd into a directory
+    label-xterm()   - echo the string to change the titlebar of an xterm
+    nb()            - set up environment for running netbackup
+    fixperms()      - usage: [filemode] [dirmode] [startdir] - performs
+                      a chmod of all files and directories under $startdir
+    maildate()      - prints out the current date/time in RFC2822 format
+    splitpatch()    - breaks a large patch into patch.$number pieces
+    prtdiag()       - find and run prtdiag for the current (Solaris) system
+    ant()           - set up environment for running ant
+    indent()        - indent stdin using $_indent_by or "    "
+
+mvsaleads
+    mvsaleads()     - moves sa leads accoring to pre-programmed criteria
+
+osname
+    osname()        - prints 'rh' for RedHat and 'sol' for Solaris
+    redhat_ver()    - get redhat version (-nd removes ".")
+    is_redhat()     - returns true if current system is redhat linux
+    is_solaris()    - returns true if current system is sun solaris
+    solaris_ver()   - shortcut? for uname -r
+    osrel()         - prints release version (-nd removes dot for redhat)
+
+path
+    path()          - the reason this all started.  path gives you inline
+                      commands for manipulating search path type environment
+                      variables (such as $PATH).  path -h for help.
+
+pathstat
+    pathstat()      - ls -ld on each part of a path, useful for tracing perms
+
+perllib
+    perllib_ver()   - sets variables for perl version and perl arch
+    perllib()       - find suitable dirs to add to $PERLLIB given $startdir
+
+scan
+    scan()          - shell script for running my hp usb scanner under linux
+
+spl
+    spl()           - read the "secure password list"
+    decrypt_spl()   - decrypt local copies of spl
+    encrypt_spl()   - encrypt local copies of spl
+    edit_spl()      - do decrypt,edit,encrypt,rm of spl
+    copy_spl()      - copy the spl to the common area
+    gettw()         - given hosts on stdin find all the tripwire pws from spl
+
+ssh
+    removekey()     - remove a hosts keys from v1 and v2 known_host files
+
+sync
+    syncup()        - runs rsync in current dir or for a file
+    resync()        - sync shell environment to other hosts
+    resync_all()    - runs resync for all current hosts I want to maintain  
+
+profile
+    tarprofile()    - create a ~/profile.tgz that can be transported
+    ntarprofile()   - runs tarprofile only if > 1 hour old

@@ -1,0 +1,64 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# functions to call rsync in various ways
+# $Id: sync,v 1.4 2003/10/30 16:53:40 mrice Exp $
+
+# shell environment sync between networks.  Updated 20031020 to use
+# .skel symlink directory.  This will now follow symlinks.
+resync() {
+    _RSYNC=/usr/bin/rsync
+    (cd $HOME/.skel
+    for host in $@; do
+        echo rsync environment to $host...
+        $_RSYNC --rsync-path=$_RSYNC -${VERBOSE}Cae 'ssh -x' \
+            --relative \
+            --copy-unsafe-links \
+            --perms \
+            . $host:
+    done
+    )
+    unset _RSYNC
+}
+
+# all environments I care about at this time
+resync_all() {
+    resync `cat $HOME/.profile.hosts || echo "NONE"`
+}
+
+# use rsync to copy this directory or a file to a particular host
+# Usually used in  directory copy mode, the other is just a way
+# to shortcut the "usual" params to rsync
+syncup() {
+    if [ "$1" = "-v" ]; then
+        _syncup_verbose=v
+        shift
+    fi
+    if [ -f "$1" ]; then
+        # file copy mode, don't create files named after hosts!
+        _syncupfile="$1"
+        shift
+    fi
+    for host in $@; do
+        ssh -x $host mkdir -p $PWD
+        if [ -f "$_syncupfile" ]; then
+            rsync -CR${_syncup_verbose}are 'ssh -x' $_syncupfile $host:$PWD/
+        else
+            rsync -C${_syncup_verbose}are 'ssh -x' $PWD/ $host:$PWD/
+        fi
+    done
+    unset _syncupfile 2>/dev/null >/dev/null
+    unset _syncup_verbose 2>/dev/null >/dev/null
+}

@@ -1,0 +1,7 @@
+add_user() {
+    sudo /home/sysadm/scripts/user_admin/add_user
+}
+
+grouprequest() {
+    /home/sysadm/scripts/user_admin/grouprequest
+}

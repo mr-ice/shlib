@@ -1,0 +1,29 @@
+perllib_ver() {
+    eval `perl -V:version`
+    eval `perl -V:archname`
+    _perllib_ver=$version
+    _perllib_arch=$archname
+    unset version
+    unset archname
+}
+
+perllib() {
+
+    perllib_ver
+    if [ -z "$_perllib_ver" ]; then
+        echo "Couldn't determine perl version"
+        return
+    fi
+    if [ -z "$_perllib_arch" ]; then
+        echo "Couldn't determine perl architecture"
+        return
+    fi
+
+    if [ -z "$1" -o ! -d "$1" ]; then
+        path -e PERLLIB $@
+        return
+    fi
+
+    path -e PERLLIB $1:$1/$_perllib_arch
+}
+

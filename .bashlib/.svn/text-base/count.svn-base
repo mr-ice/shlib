@@ -1,0 +1,41 @@
+count() {
+# usage: count <start> <finish>
+#
+# prints out numbers from <start> to <finish> one per line
+# (suitable for for j in `count <start> <finish>` loops), if
+# start>finish, decrements instead
+
+        _count_start=$1; shift
+        if [ "x$_count_start" == "x" ]; then 
+            _count_start=1
+        fi
+        _count_finish=$1; shift
+        if [ "x$_count_finish" == "x" ]; then 
+            _count_finish=100
+        fi
+                                                                                
+        _count_increment=1
+        if [ "$_count_start" -gt "$_count_finish" ]; then
+                _count_increment=-1;
+        fi
+                                                                                
+        while true; do
+                echo "$_count_start"
+                                                                                
+                _count_start=$((_count_start + $_count_increment))
+                                                                                
+                if [ "$_count_increment" -lt 0 ]; then
+                        if [ "$_count_start" -lt "$_count_finish" ]; then
+                                break
+                        fi
+                else
+                        if [ "$_count_start" -gt "$_count_finish" ]; then
+                                break
+                        fi
+                fi
+        done
+        unset _count_start
+        unset _count_finish
+        unset _count_increment
+}
+

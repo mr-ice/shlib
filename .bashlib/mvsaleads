@@ -1,0 +1,44 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+mvsaleads() { 
+    # move the sa leads archives from the netapp to alia
+
+    _mvsaleads_targetmonth=$1
+
+    _mvsaleads_from=/netapp2/vol2/SA/leads/archive
+    _mvsaleads_to=/backup/sa_archive/leads/archive
+    
+    set `date +"%Y %m %d"`
+    _mvsaleads_year=$1
+    _mvsaleads_month=$2
+    _mvsaleads_day=$3
+
+    if [ "`hostname | awk -F\. '{print $1}'`" != "norbert" ]; then
+        echo "needs to be run on Norbert!"
+        exit 1
+    fi
+    sudo ls > /dev/null         # get sudo primed
+    sudo tar -C $_mvsaleads_from/$_mvsaleads_year --remove-files \
+        -cf - $_mvsaleads_targetmonth | \
+        sudo -u ccleads tar -C $_mvsaleads_to/$_mvsaleads_year -xvf -
+
+    unset _mvsaleads_targetmonth
+    unset _mvsaleads_from
+    unset _mvsaleads_to
+    unset _mvsaleads_year
+    unset _mvsaleads_month
+    unset _mvsaleads_day
+}

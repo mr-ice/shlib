@@ -1,0 +1,14 @@
+toip () { 
+    _toip_host=$1; 
+    host $_toip_host | awk '{print $NF}'; 
+    unset _toip_host;
+}
+
+toiplist () { 
+    for _toiplist_h in $@; do
+        _toiplist_IP="$_toiplist_IP `toip $_toiplist_h`"; 
+    done;
+    echo $_toiplist_IP;
+    unset _toiplist_IP;
+}
+

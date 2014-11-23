@@ -1,0 +1,39 @@
+# shlib - shell functions in bash or zsh
+# Copyright (C) 2014 Michael Rice <michael@riceclan.org>
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+quotalookup() {
+
+    _FILER=${FILER:-aua}
+    _QUOTAS=/net/$_FILER/vol/vol0/etc/quotas
+    _DATA=/site/eng/sysadm/scripts/findstat/data/$_FILER
+
+    _QTREE=`grep '^##> /vol' $_QUOTAS | awk '$4==target{print $2}' target=$1 | awk -F/ '{print $4}'`
+
+    _MATCHES=`echo $_QTREE | wc -w`
+
+    if [ $_MATCHES -ne 1 ]; then
+        echo "ERROR, found $_MATCHES : $_QTREE"
+        return
+    fi
+
+    zgrep -hE "^tree.*$_QTREE" $_DATA/quota-report/current.gz
+
+    unset _QTREE
+    unset _MATCHES
+    unset _DATA
+    unset _QUOTAS
+    unset _FILER
+} 
